@@ -10,12 +10,18 @@ namespace StatesAndInterstates
         public string City { get; set; }
         public string State { get; set; }
         public List<Interstate> Interstates { get; set; }
+		public int DegreeRemovedFromChicago { get; set; }
+
 
         #endregion
 
-        public FileInput()
+        public FileInput(int population, string city, string state)
         {
-            Interstates = new List<Interstate>();
-        }
+			Population = population;
+			City = city;
+			State = state;
+			Interstates = new List<Interstate>();
+			DegreeRemovedFromChicago = City.ToLower() == "chicago" ? 0 : -1;
+		}
     }
 }

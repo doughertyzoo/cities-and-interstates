@@ -12,6 +12,7 @@ namespace StatesAndInterstates
         private const string InputArgumentFilepath = "/f:";
         private const string OutputFilenameCity = "Cities_By_Population.txt";
         private const string OutputFilenameInterstate = "Interstates_By_City.txt";
+		private const string OutputFilenameDegrees = "Degrees_From_Chicago.txt";
 
         private const int InputIndexPopulation = 0;
         private const int InputIndexCity = 1;
@@ -20,12 +21,14 @@ namespace StatesAndInterstates
 
         private const char DelimiterInput = '|';
         private const char DelimiterInterstates = ';';
+		private const int MaxDegreesOfSeparation = 10;
 
         #endregion
 
         #region Privates
 
         private static string _inputFileName;
+		private static string _outputPath;
         private static string _message;
         private static List<FileInput> _inputs;
 
@@ -33,13 +36,11 @@ namespace StatesAndInterstates
 
         public static void Main(string[] args)
         {
-            if (!ValidateInput(args))
-            {
-                WriteMessage();
-                return;
-            }
-
-            if (!ReadFile() && !OutputCitiesByPopulation() && !OutputInterstatesByCity())
+            if (!ValidateInput(args) || 
+				!ReadFile() ||
+				!OutputCitiesByPopulation() ||
+				!OutputInterstatesByCity() ||
+				!OutputDegreesFromChicago())
             {
                 WriteMessage();
                 return;
@@ -75,7 +76,10 @@ namespace StatesAndInterstates
                 return false;
             }
 
-            return true;
+			_outputPath = Path.GetDirectoryName(_inputFileName);
+
+
+			return true;
         }
 
         private static bool ReadFile()
@@ -89,12 +93,10 @@ namespace StatesAndInterstates
                 foreach (var line in lines)
                 {
                     var inputArray = line.Split(DelimiterInput);
-                    var input = new FileInput()
-                    {
-                        Population = int.Parse(inputArray[InputIndexPopulation]),
-                        City = inputArray[InputIndexCity],
-                        State = inputArray[InputIndexState]
-                    };
+					var input = new FileInput(
+						int.Parse(inputArray[InputIndexPopulation]),
+						inputArray[InputIndexCity],
+						inputArray[InputIndexState]);
 
                     var interstateArray = inputArray[InputIndexInterstates].Split(DelimiterInterstates);
                     foreach (var interstateString in interstateArray)
@@ -123,7 +125,7 @@ namespace StatesAndInterstates
 
             try
             {
-                using (var output = new StreamWriter(OutputFilenameCity))
+                using (var output = new StreamWriter(Path.Combine(_outputPath, OutputFilenameCity)))
                 {
                     var outputQuery = _inputs
                         .GroupBy(input => input.Population)
@@ -176,7 +178,7 @@ namespace StatesAndInterstates
                     interstates[input.Number]++;
                 }
 
-                using (var output = new StreamWriter(OutputFilenameInterstate))
+                using (var output = new StreamWriter(Path.Combine(_outputPath, OutputFilenameInterstate)))
                 {
                     foreach (var interstate in interstates.OrderBy(sort => sort.Key))
                     {
@@ -195,7 +197,55 @@ namespace StatesAndInterstates
             return result;
         }
 
-        private static void WriteMessage()
+		private static bool OutputDegreesFromChicago()
+		{
+			bool result;
+
+			try
+			{
+				for (int i = 0; i < MaxDegreesOfSeparation; i++)
+				{
+					var baseInterstates = _inputs.Where(x => x.DegreeRemovedFromChicago == i).Select(x => x.Interstates);
+					var uncheckedCities = _inputs.Where(x => x.DegreeRemovedFromChicago == -1);
+
+					if (!uncheckedCities.Any())
+					{
+						break;
+					}
+
+					foreach (var interstate in baseInterstates)
+					{
+						foreach (var city in uncheckedCities)
+						{
+							var intersection = interstate.Intersect(city.Interstates, new InterstateComparer());
+							if (intersection.Count() > 0)
+							{
+								city.DegreeRemovedFromChicago = i + 1;
+							}
+						}
+					}
+				}
+
+				using (var output = new StreamWriter(Path.Combine(_outputPath, OutputFilenameDegrees)))
+				{
+					foreach (var input in _inputs.OrderByDescending(sort => sort.DegreeRemovedFromChicago).ThenBy(sort => sort.City).ThenBy(sort => sort.State))
+					{
+						output.WriteLine(input.DegreeRemovedFromChicago + " " + input.City + ", " + input.State);
+					}
+				}
+
+				result = true;
+			}
+			catch (Exception ex)
+			{
+				_message = $"Error outputting {OutputFilenameDegrees}.\nError: {ex.Message}";
+				result = false;
+			}
+
+			return result;
+		}
+
+		private static void WriteMessage()
         {
             Console.WriteLine(_message);
         }

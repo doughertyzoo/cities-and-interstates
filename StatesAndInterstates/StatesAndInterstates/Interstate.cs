@@ -1,4 +1,7 @@
-﻿namespace StatesAndInterstates
+﻿using System;
+using System.Collections.Generic;
+
+namespace StatesAndInterstates
 {
     public class Interstate
     {
@@ -55,4 +58,29 @@
 
         #endregion
     }
+
+	public class InterstateComparer : IEqualityComparer<Interstate>
+	{
+
+		public bool Equals(Interstate x, Interstate y)
+		{
+			if (Object.ReferenceEquals(x, y)) {
+				return true;
+			} 
+			return 
+				x != null && 
+				y != null && 
+				x.DisplayName.Equals(y.DisplayName);
+		}
+
+		public int GetHashCode(Interstate obj)
+		{
+			int hashInterstateDisplayName = 
+				obj.DisplayName == null ? 
+				0 : 
+				obj.DisplayName.GetHashCode();
+			int hashInterstateNumber = obj.Number.GetHashCode();
+			return hashInterstateDisplayName ^ hashInterstateNumber;
+		}
+	}
 }
