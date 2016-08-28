@@ -70,3 +70,16 @@ I-10 4
 I-19 1
 I-20 3 
 ```
+
+Produce a single output file named Degrees_From_Chicago.txt. Each line of the output file must be of the form:
+
+Degrees removed from Chicago City, State
+
+A city is considered 1 degree removed from Chicago if it shares an interstate with Chicago. A city that is not directly connected to Chicago but is to a city 1 degree removed is considered 2 degrees removed. And so on. Chicago itself is 0 degrees removed, and a city that is not directly or indirectly connected to Chicago has a degree of -1. Cities must only appear once, with the lowest degree of connection. Sort the output by degree descending and then by city and state ascending. Example output:
+
+```
+1 Boston, Massachusetts
+1 Cleveland, Ohio
+1 Seattle, Washington
+0 Chicago, Illinois
+```
